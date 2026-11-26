@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#1e7a4a">
+<title>마른김 검품리스트</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  body { margin:0; font-family:-apple-system, "Noto Sans KR", sans-serif; background:#f4f1fb; color:#222; }
+  .wrap { max-width:460px; margin:0 auto; padding:32px 20px; text-align:center; }
+  img { width:96px; height:96px; border-radius:22px; }
+  h1 { font-size:24px; margin:16px 0 6px; }
+  p { font-size:17px; line-height:1.6; margin:10px 0; }
+  .btn { display:block; width:100%; box-sizing:border-box; padding:18px; margin:14px 0; font-size:20px; font-weight:700;
+         border:0; border-radius:14px; background:#1e7a4a; color:#fff; text-decoration:none; }
+  .btn.sub { background:#fff; color:#1e7a4a; border:2px solid #1e7a4a; }
+  .box { background:#fff; border-radius:14px; padding:16px; margin-top:18px; text-align:left; font-size:16px; line-height:1.7; }
+  .hide { display:none; }
+  input { width:100%; box-sizing:border-box; padding:12px; font-size:15px; border:1px solid #bbb; border-radius:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <img src="icon-192.png" alt="">
+  <h1>마른김 검품리스트</h1>
+
+  <div id="ready" class="hide">
+    <button id="installBtn" class="btn hide">📲 앱 설치하기</button>
+    <a id="openBtn" class="btn sub" href="#">검품리스트 열기</a>
+    <div id="manual" class="box">
+      <b>설치 방법</b><br>
+      크롬 오른쪽 위 <b>⋮</b> → <b>「앱 설치」</b> 또는 <b>「홈 화면에 추가」 → 「설치」</b><br>
+      삼성 인터넷: 아래 <b>≡</b> → <b>「현재 페이지 추가」 → 「홈 화면」</b><br>
+      설치한 뒤에는 홈 화면의 <b>마른김 검품리스트</b> 아이콘을 누르면 바로 열립니다.
+    </div>
+  </div>
+
+  <div id="done" class="hide">
+    <p>✅ 설치되었습니다.<br>홈 화면의 <b>마른김 검품리스트</b> 아이콘을 누르세요.</p>
+  </div>
+
+  <div id="need" class="hide">
+    <p>처음 한 번은 <b>받은 설치 링크</b>로 열어 주세요.</p>
+    <div class="box">
+      또는 마른김 검품리스트 주소를 붙여 넣으세요.
+      <input id="urlIn" placeholder="https://script.google.com/macros/s/.../exec">
+      <button id="saveBtn" class="btn">저장</button>
+    </div>
+  </div>
+
+  <p id="go" class="hide">검품리스트를 여는 중…</p>
+</div>
+<script>
+(function () {
+  var KEY = 'jeil_gumpum_url';
+  window.addEventListener('hashchange', function () { if (/[#&]u=/.test(location.hash)) location.reload(); });
+  var ok = function (u) { return typeof u === 'string' && /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec(\?[^#\s]*)?$/.test(u); };
+  var get = function () { try { return localStorage.getItem(KEY) || ''; } catch (e) { return ''; } };
+  var put = function (u) { try { localStorage.setItem(KEY, u); } catch (e) {} };
+  var show = function (id) { document.getElementById(id).classList.remove('hide'); };
+
+  /* 설치 링크의 # 뒤에 검품리스트 주소가 들어 있으면 이 기기에 기억 (# 뒤는 인터넷으로 보내지지 않음) */
+  var m = /[#&]u=([^&]+)/.exec(location.hash);
+  if (m) { var u0 = decodeURIComponent(m[1]); if (ok(u0)) put(u0); history.replaceState(null, '', location.pathname); }
+
+  var url = get();
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+
+  if (!ok(url)) {
+    show('need');
+    document.getElementById('saveBtn').onclick = function () {
+      var v = document.getElementById('urlIn').value.trim();
+      if (!ok(v)) { alert('마른김 검품리스트 주소(script.google.com 으로 시작)를 넣어 주세요.'); return; }
+      put(v); location.reload();
+    };
+    return;
+  }
+
+  if (standalone) { show('go'); location.replace(url); return; }   /* 설치한 앱으로 열면 바로 검품리스트로 */
+
+  show('ready');
+  document.getElementById('openBtn').href = url;
+  var deferred = null, btn = document.getElementById('installBtn');
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; btn.classList.remove('hide'); });
+  btn.onclick = function () { if (!deferred) return; deferred.prompt(); deferred.userChoice.then(function () { deferred = null; btn.classList.add('hide'); }); };
+  window.addEventListener('appinstalled', function () { document.getElementById('ready').classList.add('hide'); show('done'); });
+})();
+</script>
+</body>
+</html>
