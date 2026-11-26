@@ -28,6 +28,10 @@
   <h1>마른김 검품리스트</h1>
 
   <div id="ready" class="hide">
+    <div id="chromeBox" class="hide">
+      <p>지금 열린 창에서는 <b>설치가 안 돼요.</b><br>아래 버튼을 눌러 <b>크롬</b>에서 여세요.</p>
+      <a id="chromeBtn" class="btn" href="#">🌐 크롬으로 열기</a>
+    </div>
     <button id="installBtn" class="btn hide">📲 앱 설치하기</button>
     <a id="openBtn" class="btn sub" href="#">검품리스트 열기</a>
     <div id="manual" class="box">
@@ -63,8 +67,13 @@
   var show = function (id) { document.getElementById(id).classList.remove('hide'); };
 
   /* 설치 링크의 # 뒤에 검품리스트 주소가 들어 있으면 이 기기에 기억 (# 뒤는 인터넷으로 보내지지 않음) */
-  var m = /[#&]u=([^&]+)/.exec(location.hash);
+  var m = /[#&]u=([^&]+)/.exec(location.hash) || /[?&]u=([^&#]+)/.exec(location.search);
   if (m) { var u0 = decodeURIComponent(m[1]); if (ok(u0)) put(u0); history.replaceState(null, '', location.pathname); }
+
+  /* 안드로이드에서 크롬이 아닌 창(삼성 인터넷·카메라·카톡·네이버 등 앱 안의 창)인지 */
+  var ua = navigator.userAgent;
+  var android = /Android/i.test(ua);
+  var realChrome = /Chrome\/\d+/.test(ua) && !/SamsungBrowser|; wv\)|Version\/\d|KAKAOTALK|NAVER|Whale|DaumApps|Line\/|Instagram|FBAN|FBAV|EdgA|OPR\//i.test(ua);
 
   var url = get();
   var standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
@@ -85,6 +94,11 @@
 
   show('ready');
   document.getElementById('openBtn').href = url;
+  if (android && !realChrome) {   /* 크롬으로 다시 열기: 주소는 크롬 쪽에도 한 번 저장돼야 하므로 함께 넘김 */
+    var path = location.host + location.pathname + '?u=' + encodeURIComponent(url);
+    document.getElementById('chromeBtn').href = 'intent://' + path + '#Intent;scheme=https;package=com.android.chrome;end';
+    show('chromeBox');
+  }
   var deferred = null, btn = document.getElementById('installBtn');
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; btn.classList.remove('hide'); });
   btn.onclick = function () { if (!deferred) return; deferred.prompt(); deferred.userChoice.then(function () { deferred = null; btn.classList.add('hide'); }); };
